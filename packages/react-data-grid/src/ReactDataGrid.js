@@ -260,7 +260,9 @@ class ReactDataGrid extends React.Component {
   componentDidMount() {
     this._mounted = true;
     window.addEventListener('resize', this.metricsUpdated);
-    this.grid.addEventListener('mouseup', this.onWindowMouseUp);
+    if (this.props.cellRangeSelection) {
+      this.grid.addEventListener('mouseup', this.onWindowMouseUp);
+    }
     this.metricsUpdated();
   }
 
