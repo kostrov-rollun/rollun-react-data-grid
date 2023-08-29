@@ -1,5 +1,5 @@
 {
-  "name": "react-data-grid-addons",
+  "name": "rollun-react-data-grid-addons",
   "version": "6.1.4",
   "description": "A set of addons for react-data-grid",
   "scripts": {
@@ -35,5 +35,6 @@
     "react-select": "^1.3.0",
     "reselect": "^2.5.1",
     "ron-react-autocomplete": "^4.0.9"
-  }
+  },
+  "gitHead": "a6b63c89d2ac43b58fd1d759a2852229dfbd638f"
 }
