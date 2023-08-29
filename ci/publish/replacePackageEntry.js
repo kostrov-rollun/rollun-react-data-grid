@@ -6,7 +6,7 @@ const publish = scriptArgs[1];
 
 const getPathToPackageEntry = () => path.join(__dirname, `../../packages/${packageName}/index.js`);
 const getPublishEntryData = () => `module.exports = require('./dist/${packageName}');`;
-const getDevEntryData = () => "module.exports = require('./src');";
+const getDevEntryData = () => "module.exports = require('./dist/react-data-grid');";
 
 const replacePackageEntry = () => {
   const entryData = publish ? getPublishEntryData() : getDevEntryData();
