@@ -260,13 +260,16 @@ class ReactDataGrid extends React.Component {
   componentDidMount() {
     this._mounted = true;
     window.addEventListener('resize', this.metricsUpdated);
+    if (this.props.cellRangeSelection) {
+      window.addEventListener('mouseup', this.onWindowMouseUp);
+    }
     this.metricsUpdated();
   }
 
   componentWillUnmount() {
     this._mounted = false;
     window.removeEventListener('resize', this.metricsUpdated);
-    this.grid.removeEventListener('mouseup', this.onWindowMouseUp);
+    window.removeEventListener('mouseup', this.onWindowMouseUp);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -412,7 +415,6 @@ class ReactDataGrid extends React.Component {
   };
 
   onCellMouseDown = (cellPosition) => {
-    window.addEventListener('mouseup', this.onWindowMouseUp);
     this.selectStart(cellPosition);
   };
 
@@ -421,7 +423,6 @@ class ReactDataGrid extends React.Component {
   };
 
   onWindowMouseUp = () => {
-    window.removeEventListener('mouseup', this.onWindowMouseUp);
     this.selectEnd();
   };
 
