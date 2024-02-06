@@ -1,6 +1,6 @@
 {
   "name": "rollun-react-data-grid-examples",
-  "version": "6.1.12",
+  "version": "6.1.13",
   "description": "A set of examples for the grid",
   "main": "main.js",
   "scripts": {
