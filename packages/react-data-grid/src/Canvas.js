@@ -118,7 +118,7 @@ class Canvas extends React.PureComponent {
   }
 
   onRows = () => {
-    if (this._currentRowsRange !== { start: 0, end: 0 }) {
+    if (this._currentRowsRange?.start !== 0 && this._currentRowsRange?.end !== 0) {
       this.props.onRows(this._currentRowsRange);
       this._currentRowsRange = { start: 0, end: 0 };
     }

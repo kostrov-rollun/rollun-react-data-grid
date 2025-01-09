@@ -1,6 +1,6 @@
 {
   "name": "rollun-react-data-grid",
-  "version": "6.1.13",
+  "version": "6.1.14",
   "description": "Excel-like grid component built with React, with editors, keyboard navigation, copy & paste, and the like",
   "scripts": {
     "beforepublish": "node ../../ci/publish/replacePackageEntry react-data-grid true",
