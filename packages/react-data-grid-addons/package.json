@@ -1,6 +1,6 @@
 {
   "name": "rollun-react-data-grid-addons",
-  "version": "6.1.14",
+  "version": "6.1.15",
   "description": "A set of addons for react-data-grid",
   "scripts": {
     "beforepublish": "node ../../ci/publish/replacePackageEntry react-data-grid-addons true",

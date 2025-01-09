@@ -7,6 +7,7 @@ module.exports = {
     '@babel/plugin-proposal-class-properties',
     '@babel/plugin-transform-property-literals',
     '@babel/plugin-transform-member-expression-literals',
+    '@babel/plugin-proposal-optional-chaining',
     '@babel/plugin-transform-runtime'
   ]
 };
