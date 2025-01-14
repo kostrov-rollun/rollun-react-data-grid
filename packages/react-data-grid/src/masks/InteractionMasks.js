@@ -96,6 +96,7 @@ class InteractionMasks extends React.Component {
     draggedPosition: null,
     isEditorEnabled: false,
     firstEditorKeyPress: null,
+    shiftKeyPressed: false,
   };
 
   componentDidUpdate(prevProps, prevState) {
@@ -164,6 +165,11 @@ class InteractionMasks extends React.Component {
     if (enableCellAutoFocus && this.isFocusedOnBody()) {
       this.selectFirstCell();
     }
+
+    window.addEventListener("keydown", this.globalOnKeyDown);
+    window.addEventListener("keyup", this.globalOnKeyUp);
+
+    this.focus(true);
   }
 
   componentWillUnmount() {
@@ -172,6 +178,9 @@ class InteractionMasks extends React.Component {
     this.unsubscribeSelectUpdate();
     this.unsubscribeSelectEnd();
     this.unsubscribeDragEnter();
+
+    window.removeEventListener("keydown", this.globalOnKeyDown);
+    window.removeEventListener("keyup", this.globalOnKeyUp);
   }
 
   getEditorPosition = () => {
@@ -232,6 +241,12 @@ class InteractionMasks extends React.Component {
     this.setMaskScollLeft(copyMask, copiedPosition, scrollLeft);
   };
 
+  globalOnKeyDown = (e) => {
+    if (e.key === "Shift") {
+      this.setState({ shiftKeyPressed: true });
+    }
+  };
+
   onKeyDown = (e) => {
     if (isCtrlKeyHeldDown(e)) {
       this.onPressKeyWithCtrl(e);
@@ -248,6 +263,16 @@ class InteractionMasks extends React.Component {
       ) !== -1
     ) {
       this.openEditor(e);
+    }
+  };
+
+  globalOnKeyUp = (event) => {
+    if (event.key === "Shift") {
+      this.setState({ shiftKeyPressed: false }, () => {
+        if (!selectedRangeIsSingleCell(this.state.selectedRange)) {
+          this.onSelectCellRangeEnded();
+        }
+      });
     }
   };
 
@@ -282,34 +307,50 @@ class InteractionMasks extends React.Component {
     });
   };
 
-  onPressKeyWithCtrl = ({ keyCode }) => {
+  onPressKeyWithCtrl = ({ keyCode, altKey }) => {
     if (this.copyPasteEnabled()) {
       if (keyCode === keyCodes.c) {
-        const { columns, rowGetter } = this.props;
-        const { selectedRange, selectedPosition } = this.state;
-
-        // If range is selected, copy range. Otherwise, copy single cell
-        if (!selectedRangeIsSingleCell(selectedRange)) {
-          const values = this.getSelectedRangeValues(selectedRange);
-          this.handleRangeCopy(values);
-        } else {
-          const value = getSelectedCellValue({
-            selectedPosition,
-            columns,
-            rowGetter,
-          });
-          this.handleCopy({ value });
-        }
+        this.copyValue(altKey);
       } else if (keyCode === keyCodes.v) {
         this.handlePaste();
       }
     }
   };
 
-  getSelectedRangeValues = (selectedRange) => {
+  copyValue = (copyWithHeader = false) => {
+    const { columns, rowGetter } = this.props;
+    const { selectedRange, selectedPosition } = this.state;
+
+    // If range is selected, copy range. Otherwise, copy single cell
+    if (!selectedRangeIsSingleCell(selectedRange)) {
+      const values = this.getSelectedRangeValues(selectedRange, copyWithHeader);
+      this.handleRangeCopy(values);
+    } else {
+      const value = getSelectedCellValue({
+        selectedPosition,
+        columns,
+        rowGetter,
+      });
+      this.handleCopy({ value });
+    }
+  };
+
+  copyValueWithHeader = () => {
+    this.copyValue(true);
+  };
+
+  getSelectedRangeValues = (selectedRange, altKey) => {
     const { columns, rowGetter } = this.props;
     const { topLeft, bottomRight } = selectedRange;
     const values = [];
+
+    if (altKey) {
+      const headerRow = [];
+      for (let idx = topLeft.idx; idx <= bottomRight.idx; idx++) {
+        headerRow.push(columns[idx].name);
+      }
+      values.push(headerRow);
+    }
 
     // Iterate through the range
     for (let rowIdx = topLeft.rowIdx; rowIdx <= bottomRight.rowIdx; rowIdx++) {
@@ -613,9 +654,9 @@ class InteractionMasks extends React.Component {
     return document.activeElement === document.body;
   };
 
-  focus = () => {
+  focus = (preventScroll = false) => {
     if (this.selectionMask && !this.isFocused()) {
-      this.selectionMask.focus();
+      this.selectionMask.focus({ preventScroll });
     }
   };
 
@@ -634,22 +675,51 @@ class InteractionMasks extends React.Component {
     if (this.state.isEditorEnabled) {
       this.closeEditor();
     }
-    this.setState((prevState) => {
-      const next = { ...prevState.selectedPosition, ...cell };
-      if (this.isCellWithinBounds(next)) {
-        return {
-          selectedPosition: next,
-          selectedRange: {
-            topLeft: next,
-            bottomRight: next,
-            startCell: next,
-            cursorCell: next,
-            isDragging: false,
-          },
-        };
-      }
-      return prevState;
-    }, callback);
+
+    if (this.state.shiftKeyPressed) {
+      // Use previous selectedPosition as start point and clicked cell as end point
+      this.setState(
+        (prevState) => {
+          const startCell = prevState.selectedPosition;
+          const colIdxs = [startCell.idx, cell.idx].sort((a, b) => a - b);
+          const rowIdxs = [startCell.rowIdx, cell.rowIdx].sort((a, b) => a - b);
+
+          return {
+            selectedPosition: cell,
+            selectedRange: {
+              startCell: cell,
+              topLeft: { idx: colIdxs[0], rowIdx: rowIdxs[0] },
+              bottomRight: { idx: colIdxs[1], rowIdx: rowIdxs[1] },
+              cursorCell: cell,
+              isDragging: false,
+            },
+          };
+        },
+        () => {
+          if (isFunction(this.props.onCellRangeSelectionStarted)) {
+            this.props.onCellRangeSelectionStarted(this.state.selectedRange);
+          }
+        }
+      );
+    } else {
+      // Normal single cell selection
+      this.setState((prevState) => {
+        const next = { ...prevState.selectedPosition, ...cell };
+        if (this.isCellWithinBounds(next)) {
+          return {
+            selectedPosition: next,
+            selectedRange: {
+              topLeft: next,
+              bottomRight: next,
+              startCell: next,
+              cursorCell: next,
+              isDragging: false,
+            },
+          };
+        }
+        return prevState;
+      }, callback);
+    }
   };
 
   createSingleCellSelectedRange(cellPosition, isDragging) {
@@ -663,22 +733,24 @@ class InteractionMasks extends React.Component {
   }
 
   onSelectCellRangeStarted = (selectedPosition) => {
-    this.setState({ isEditorEnabled: false }, () => {
-      this.setState(
-        {
-          selectedRange: this.createSingleCellSelectedRange(
+    if (!this.state.shiftKeyPressed) {
+      this.setState({ isEditorEnabled: false }, () => {
+        this.setState(
+          {
+            selectedRange: this.createSingleCellSelectedRange(
+              selectedPosition,
+              true
+            ),
             selectedPosition,
-            true
-          ),
-          selectedPosition,
-        },
-        () => {
-          if (isFunction(this.props.onCellRangeSelectionStarted)) {
-            this.props.onCellRangeSelectionStarted(this.state.selectedRange);
+          },
+          () => {
+            if (isFunction(this.props.onCellRangeSelectionStarted)) {
+              this.props.onCellRangeSelectionStarted(this.state.selectedRange);
+            }
           }
-        }
-      );
-    });
+        );
+      });
+    }
   };
 
   onSelectCellRangeUpdated = (cellPosition, isFromKeyboard, callback) => {
@@ -731,9 +803,8 @@ class InteractionMasks extends React.Component {
       if (isFunction(this.props.onCellRangeSelectionCompleted)) {
         this.props.onCellRangeSelectionCompleted(this.state.selectedRange);
       }
-
       // Focus the InteractionMasks, so it can receive keyboard events
-      this.focus();
+      this.focus(true);
     });
   };
 

@@ -1,8 +1,8 @@
-import React from 'react';
-import Canvas from './Canvas';
-import cellMetaDataShape from 'common/prop-shapes/CellMetaDataShape';
-import PropTypes from 'prop-types';
-import { getSize } from './ColumnUtils';
+import React from "react";
+import Canvas from "./Canvas";
+import cellMetaDataShape from "common/prop-shapes/CellMetaDataShape";
+import PropTypes from "prop-types";
+import { getSize } from "./ColumnUtils";
 import {
   getGridState,
   getColOverscanEndIdx,
@@ -13,31 +13,33 @@ import {
   getColOverscanStartIdx,
   getNonFrozenVisibleColStartIdx,
   getNonFrozenRenderedColumnCount,
-  findLastFrozenColumnIndex
-} from './utils/viewportUtils';
+  findLastFrozenColumnIndex,
+} from "./utils/viewportUtils";
 
 class Viewport extends React.Component {
-  static displayName = 'Viewport';
+  static displayName = "Viewport";
 
   static propTypes = {
     rowOffsetHeight: PropTypes.number.isRequired,
-    totalWidth: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    totalWidth: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+      .isRequired,
     columnMetrics: PropTypes.object.isRequired,
-    rowGetter: PropTypes.oneOfType([PropTypes.array, PropTypes.func]).isRequired,
+    rowGetter: PropTypes.oneOfType([PropTypes.array, PropTypes.func])
+      .isRequired,
     selectedRows: PropTypes.array,
     rowSelection: PropTypes.oneOfType([
       PropTypes.shape({
-        indexes: PropTypes.arrayOf(PropTypes.number).isRequired
+        indexes: PropTypes.arrayOf(PropTypes.number).isRequired,
       }),
       PropTypes.shape({
-        isSelectedKey: PropTypes.string.isRequired
+        isSelectedKey: PropTypes.string.isRequired,
       }),
       PropTypes.shape({
         keys: PropTypes.shape({
           values: PropTypes.array.isRequired,
-          rowKey: PropTypes.string.isRequired
-        }).isRequired
-      })
+          rowKey: PropTypes.string.isRequired,
+        }).isRequired,
+      }),
     ]),
     expandedRows: PropTypes.array,
     rowRenderer: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
@@ -68,11 +70,12 @@ class Viewport extends React.Component {
     onCellRangeSelectionCompleted: PropTypes.func,
     onCommit: PropTypes.func.isRequired,
     RowsContainer: PropTypes.node,
-    editorPortalTarget: PropTypes.instanceOf(Element).isRequired
+    editorPortalTarget: PropTypes.instanceOf(Element).isRequired,
+    interactionMasksRef: PropTypes.object,
   };
 
   static defaultProps = {
-    rowHeight: 30
+    rowHeight: 30,
   };
 
   state = getGridState(this.props);
@@ -84,7 +87,7 @@ class Viewport extends React.Component {
       scrollLeft,
       height: this.state.height,
       rowHeight,
-      rowsCount
+      rowsCount,
     });
 
     if (onScroll) {
@@ -113,17 +116,51 @@ class Viewport extends React.Component {
   getNextScrollState({ scrollTop, scrollLeft, height, rowHeight, rowsCount }) {
     const isScrolling = true;
     const { columns } = this.props.columnMetrics;
-    const scrollDirection = getScrollDirection(this.state, scrollTop, scrollLeft);
-    const { rowVisibleStartIdx, rowVisibleEndIdx } = getVisibleBoundaries(height, rowHeight, scrollTop, rowsCount);
-    const rowOverscanStartIdx = getRowOverscanStartIdx(scrollDirection, rowVisibleStartIdx);
-    const rowOverscanEndIdx = getRowOverscanEndIdx(scrollDirection, rowVisibleEndIdx, rowsCount);
+    const scrollDirection = getScrollDirection(
+      this.state,
+      scrollTop,
+      scrollLeft
+    );
+    const { rowVisibleStartIdx, rowVisibleEndIdx } = getVisibleBoundaries(
+      height,
+      rowHeight,
+      scrollTop,
+      rowsCount
+    );
+    const rowOverscanStartIdx = getRowOverscanStartIdx(
+      scrollDirection,
+      rowVisibleStartIdx
+    );
+    const rowOverscanEndIdx = getRowOverscanEndIdx(
+      scrollDirection,
+      rowVisibleEndIdx,
+      rowsCount
+    );
     const totalNumberColumns = getSize(columns);
     const lastFrozenColumnIndex = findLastFrozenColumnIndex(columns);
-    const nonFrozenColVisibleStartIdx = getNonFrozenVisibleColStartIdx(columns, scrollLeft);
-    const nonFrozenRenderedColumnCount = getNonFrozenRenderedColumnCount(this.props.columnMetrics, this.getDOMNodeOffsetWidth(), scrollLeft);
-    const colVisibleEndIdx = Math.min(nonFrozenColVisibleStartIdx + nonFrozenRenderedColumnCount, totalNumberColumns);
-    const colOverscanStartIdx = getColOverscanStartIdx(scrollDirection, nonFrozenColVisibleStartIdx, lastFrozenColumnIndex);
-    const colOverscanEndIdx = getColOverscanEndIdx(scrollDirection, colVisibleEndIdx, totalNumberColumns);
+    const nonFrozenColVisibleStartIdx = getNonFrozenVisibleColStartIdx(
+      columns,
+      scrollLeft
+    );
+    const nonFrozenRenderedColumnCount = getNonFrozenRenderedColumnCount(
+      this.props.columnMetrics,
+      this.getDOMNodeOffsetWidth(),
+      scrollLeft
+    );
+    const colVisibleEndIdx = Math.min(
+      nonFrozenColVisibleStartIdx + nonFrozenRenderedColumnCount,
+      totalNumberColumns
+    );
+    const colOverscanStartIdx = getColOverscanStartIdx(
+      scrollDirection,
+      nonFrozenColVisibleStartIdx,
+      lastFrozenColumnIndex
+    );
+    const colOverscanEndIdx = getColOverscanEndIdx(
+      scrollDirection,
+      colVisibleEndIdx,
+      totalNumberColumns
+    );
     return {
       height,
       scrollTop,
@@ -138,7 +175,7 @@ class Viewport extends React.Component {
       colOverscanEndIdx,
       scrollDirection,
       lastFrozenColumnIndex,
-      isScrolling
+      isScrolling,
     };
   }
 
@@ -153,7 +190,7 @@ class Viewport extends React.Component {
   resetScrollStateAfterDelayCallback = () => {
     this.resetScrollStateTimeoutId = null;
     this.setState({
-      isScrolling: false
+      isScrolling: false,
     });
   };
 
@@ -176,7 +213,7 @@ class Viewport extends React.Component {
         height,
         rowHeight,
         rowsCount,
-        width
+        width,
       });
     }
   };
@@ -191,17 +228,22 @@ class Viewport extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const { rowHeight, rowsCount } = nextProps;
-    if (this.props.rowHeight !== nextProps.rowHeight ||
-      this.props.minHeight !== nextProps.minHeight) {
+    if (
+      this.props.rowHeight !== nextProps.rowHeight ||
+      this.props.minHeight !== nextProps.minHeight
+    ) {
       const { scrollTop, scrollLeft, height } = getGridState(nextProps);
       this.updateScroll({
         scrollTop,
         scrollLeft,
         height,
         rowHeight,
-        rowsCount
+        rowsCount,
       });
-    } else if (getSize(this.props.columnMetrics.columns) !== getSize(nextProps.columnMetrics.columns)) {
+    } else if (
+      getSize(this.props.columnMetrics.columns) !==
+      getSize(nextProps.columnMetrics.columns)
+    ) {
       this.setState(getGridState(nextProps));
     } else if (this.props.rowsCount !== nextProps.rowsCount) {
       const { scrollTop, scrollLeft, height } = this.state;
@@ -210,30 +252,33 @@ class Viewport extends React.Component {
         scrollLeft,
         height,
         rowHeight,
-        rowsCount
+        rowsCount,
       });
       // Added to fix the hiding of the bottom scrollbar when showing the filters.
     } else if (this.props.rowOffsetHeight !== nextProps.rowOffsetHeight) {
       const { scrollTop, scrollLeft } = this.state;
       // The value of height can be positive or negative and will be added to the current height to cater for changes in the header height (due to the filer)
-      const height = this.state.height + this.props.rowOffsetHeight - nextProps.rowOffsetHeight;
+      const height =
+        this.state.height +
+        this.props.rowOffsetHeight -
+        nextProps.rowOffsetHeight;
       this.updateScroll({
         scrollTop,
         scrollLeft,
         height,
         rowHeight,
-        rowsCount
+        rowsCount,
       });
     }
   }
 
   componentDidMount() {
-    window.addEventListener('resize', this.metricsUpdated);
+    window.addEventListener("resize", this.metricsUpdated);
     this.metricsUpdated();
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.metricsUpdated);
+    window.removeEventListener("resize", this.metricsUpdated);
     this.clearScrollTimer();
   }
 
@@ -251,15 +296,16 @@ class Viewport extends React.Component {
       bottom: 0,
       left: 0,
       right: 0,
-      overflow: 'hidden',
-      position: 'absolute',
-      top: this.props.rowOffsetHeight
+      overflow: "hidden",
+      position: "absolute",
+      top: this.props.rowOffsetHeight,
     };
     return (
       <div
         className="react-grid-Viewport"
         style={style}
-        ref={this.setViewportRef}>
+        ref={this.setViewportRef}
+      >
         <Canvas
           ref={this.setCanvasRef}
           rowKey={this.props.rowKey}
@@ -305,12 +351,15 @@ class Viewport extends React.Component {
           onCellDeSelected={this.props.onCellDeSelected}
           onCellRangeSelectionStarted={this.props.onCellRangeSelectionStarted}
           onCellRangeSelectionUpdated={this.props.onCellRangeSelectionUpdated}
-          onCellRangeSelectionCompleted={this.props.onCellRangeSelectionCompleted}
+          onCellRangeSelectionCompleted={
+            this.props.onCellRangeSelectionCompleted
+          }
           onCommit={this.props.onCommit}
           RowsContainer={this.props.RowsContainer}
           prevScrollLeft={this.state.prevScrollLeft}
           prevScrollTop={this.state.prevScrollTop}
           editorPortalTarget={this.props.editorPortalTarget}
+          interactionMasksRef={this.props.interactionMasksRef}
         />
       </div>
     );
