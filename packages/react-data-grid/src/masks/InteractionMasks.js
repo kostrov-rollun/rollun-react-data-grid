@@ -23,6 +23,7 @@ import {
 import { isFunction } from "common/utils";
 import { getSize, getColumn, isFrozen } from "../ColumnUtils";
 import * as keyCodes from "../KeyCodes";
+import { copyToClipboard } from "rollun-ts-utils";
 import { CellNavigationMode, EventTypes } from "common/constants";
 
 require("../../../../themes/interaction-masks.css");
@@ -377,9 +378,7 @@ class InteractionMasks extends React.Component {
     const copyText = values.map((row) => row.join("\t")).join("\n");
 
     // Copy to clipboard
-    navigator.clipboard.writeText(copyText).catch((err) => {
-      console.error("Failed to copy to clipboard:", err);
-    });
+    copyToClipboard(copyText);
 
     // Update state to show copy indicator
     const { selectedRange } = this.state;
@@ -447,9 +446,7 @@ class InteractionMasks extends React.Component {
 
   handleCopy = ({ value }) => {
     const { rowIdx, idx } = this.state.selectedPosition;
-    navigator.clipboard.writeText(value).catch((err) => {
-      console.error("Failed to copy to clipboard:", err);
-    });
+    copyToClipboard(value);
     this.setState({
       copiedPosition: { rowIdx, idx, value },
       copiedRange: null,

@@ -26,6 +26,7 @@
   "dependencies": {
     "object-assign": "^4.1.1",
     "react-is-deprecated": "^0.1.2",
+    "rollun-ts-utils": "^0.0.12",
     "shallowequal": "^1.1.0"
   },
   "gitHead": "a6b63c89d2ac43b58fd1d759a2852229dfbd638f"
