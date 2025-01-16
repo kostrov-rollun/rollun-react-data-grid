@@ -93,6 +93,7 @@ class InteractionMasks extends React.Component {
       },
     },
     copiedPosition: null,
+    copiedRange: null,
     draggedPosition: null,
     isEditorEnabled: false,
     firstEditorKeyPress: null,
@@ -311,9 +312,11 @@ class InteractionMasks extends React.Component {
     if (this.copyPasteEnabled()) {
       if (keyCode === keyCodes.c) {
         this.copyValue(altKey);
-      } else if (keyCode === keyCodes.v) {
-        this.handlePaste();
       }
+      // TODO: Uncomment this when we have paste functionality
+      // else if (keyCode === keyCodes.v) {
+      //   this.handlePaste();
+      // }
     }
   };
 
@@ -381,10 +384,8 @@ class InteractionMasks extends React.Component {
     // Update state to show copy indicator
     const { selectedRange } = this.state;
     this.setState({
-      copiedPosition: {
-        ...selectedRange,
-        value: values,
-      },
+      copiedRange: selectedRange,
+      copiedPosition: null,
     });
   };
 
@@ -451,43 +452,94 @@ class InteractionMasks extends React.Component {
     });
     this.setState({
       copiedPosition: { rowIdx, idx, value },
+      copiedRange: null,
     });
   };
 
   handleCancelCopy = () => {
-    this.setState({ copiedPosition: null });
+    this.setState({
+      copiedPosition: null,
+      copiedRange: null,
+    });
   };
 
   handlePaste = () => {
     const { columns, onCellCopyPaste, onGridRowsUpdated } = this.props;
-    const { selectedPosition, copiedPosition } = this.state;
+    const { selectedPosition, copiedPosition, copiedRange } = this.state;
     const { rowIdx: toRow } = selectedPosition;
 
-    if (copiedPosition == null) {
+    if (!copiedPosition && !copiedRange) {
       return;
     }
 
-    const { key: cellKey } = getSelectedColumn({ selectedPosition, columns });
-    const { rowIdx: fromRow, value: textToCopy } = copiedPosition;
+    if (copiedRange) {
+      const { topLeft, bottomRight } = copiedRange;
+      const rowsSpan = bottomRight.rowIdx - topLeft.rowIdx + 1;
+      const colsSpan = bottomRight.idx - topLeft.idx + 1;
 
-    if (isFunction(onCellCopyPaste)) {
-      onCellCopyPaste({
+      // Paste the range starting from the selected cell
+      for (let i = 0; i < rowsSpan; i++) {
+        for (let j = 0; j < colsSpan; j++) {
+          const sourceRowIdx = topLeft.rowIdx + i;
+          const sourceIdx = topLeft.idx + j;
+          const targetRowIdx = toRow + i;
+          const targetIdx = selectedPosition.idx + j;
+
+          const sourceColumn = getColumn(columns, sourceIdx);
+          const targetColumn = getColumn(columns, targetIdx);
+
+          if (sourceColumn && targetColumn) {
+            const value = getSelectedCellValue({
+              selectedPosition: { rowIdx: sourceRowIdx, idx: sourceIdx },
+              columns,
+              rowGetter: this.props.rowGetter,
+            });
+
+            if (isFunction(onCellCopyPaste)) {
+              onCellCopyPaste({
+                cellKey: targetColumn.key,
+                rowIdx: targetRowIdx,
+                fromRow: sourceRowIdx,
+                toRow: targetRowIdx,
+                value,
+              });
+            }
+
+            onGridRowsUpdated(
+              targetColumn.key,
+              targetRowIdx,
+              targetRowIdx,
+              { [targetColumn.key]: value },
+              UpdateActions.COPY_PASTE,
+              sourceRowIdx
+            );
+          }
+        }
+      }
+    } else {
+      // Handle single cell paste (existing logic)
+      const { key: cellKey } = getSelectedColumn({ selectedPosition, columns });
+      const { rowIdx: fromRow, value: textToCopy } = copiedPosition;
+
+      if (isFunction(onCellCopyPaste)) {
+        onCellCopyPaste({
+          cellKey,
+          rowIdx: toRow,
+          fromRow,
+          toRow,
+          value: textToCopy,
+        });
+      }
+
+      onGridRowsUpdated(
         cellKey,
-        rowIdx: toRow,
-        fromRow,
         toRow,
-        value: textToCopy,
-      });
+        toRow,
+        { [cellKey]: textToCopy },
+        UpdateActions.COPY_PASTE,
+        fromRow
+      );
     }
-
-    onGridRowsUpdated(
-      cellKey,
-      toRow,
-      toRow,
-      { [cellKey]: textToCopy },
-      UpdateActions.COPY_PASTE,
-      fromRow
-    );
   };
 
   isKeyboardNavigationEvent(e) {
@@ -975,14 +1027,16 @@ class InteractionMasks extends React.Component {
       selectedPosition,
       draggedPosition,
       copiedPosition,
+      copiedRange,
     } = this.state;
     const rowData = getSelectedRow({ selectedPosition, rowGetter });
     const columns = getRowColumns(selectedPosition.rowIdx);
     return (
       <div onKeyDown={this.onKeyDown} onFocus={this.onFocus}>
-        {copiedPosition && (
+        {(copiedPosition || copiedRange) && (
           <CopyMask
             copiedPosition={copiedPosition}
+            copiedRange={copiedRange}
             innerRef={this.setCopyMaskRef}
             getSelectedDimensions={this.getSelectedDimensions}
           />
