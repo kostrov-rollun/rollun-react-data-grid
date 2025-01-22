@@ -309,15 +309,13 @@ class InteractionMasks extends React.Component {
   };
 
   onPressKeyWithCtrl = ({ keyCode, altKey }) => {
-    if (this.copyEnabled()) {
-      if (keyCode === keyCodes.c) {
-        this.copyValue(altKey);
-      }
-      // TODO: Uncomment this when we have paste functionality
-      // else if (keyCode === keyCodes.v) {
-      //   this.handlePaste();
-      // }
+    if (keyCode === keyCodes.c) {
+      this.copyValue(altKey);
     }
+    // TODO: Uncomment this when we have paste functionality
+    // else if (keyCode === keyCodes.v && this.copyPasteEnabled()) {
+    //   this.handlePaste();
+    // }
   };
 
   copyValue = (copyWithHeader = false) => {
@@ -448,7 +446,8 @@ class InteractionMasks extends React.Component {
   };
 
   copyEnabled = () => {
-    return !!this.props.onCellCopyPaste;
+    // TODO: add copyEnabled prop if we will need it
+    return true;
   };
 
   handleCopy = async ({ value }) => {
