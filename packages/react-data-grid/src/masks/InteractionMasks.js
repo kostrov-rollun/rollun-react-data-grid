@@ -23,7 +23,6 @@ import {
 import { isFunction } from "common/utils";
 import { getSize, getColumn, isFrozen } from "../ColumnUtils";
 import * as keyCodes from "../KeyCodes";
-import { copyToClipboard } from "rollun-ts-utils";
 import { CellNavigationMode, EventTypes } from "common/constants";
 
 require("../../../../themes/interaction-masks.css");
@@ -310,7 +309,7 @@ class InteractionMasks extends React.Component {
   };
 
   onPressKeyWithCtrl = ({ keyCode, altKey }) => {
-    if (this.copyPasteEnabled()) {
+    if (this.copyEnabled()) {
       if (keyCode === keyCodes.c) {
         this.copyValue(altKey);
       }
@@ -373,19 +372,23 @@ class InteractionMasks extends React.Component {
     return values;
   };
 
-  handleRangeCopy = (values) => {
+  handleRangeCopy = async (values) => {
     // Convert 2D array to tab/newline delimited string
     const copyText = values.map((row) => row.join("\t")).join("\n");
 
     // Copy to clipboard
-    copyToClipboard(copyText);
+    try {
+      await navigator.clipboard.writeText(copyText);
 
-    // Update state to show copy indicator
-    const { selectedRange } = this.state;
-    this.setState({
-      copiedRange: selectedRange,
-      copiedPosition: null,
-    });
+      const { selectedRange } = this.state;
+      // Update state to show copy indicator
+      this.setState({
+        copiedRange: selectedRange,
+        copiedPosition: null,
+      });
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+    }
   };
 
   onFocus = (e) => {
@@ -441,16 +444,24 @@ class InteractionMasks extends React.Component {
   };
 
   copyPasteEnabled = () => {
-    return this.props.onCellCopyPaste !== null && this.isSelectedCellEditable();
+    return this.copyEnabled() && this.isSelectedCellEditable();
   };
 
-  handleCopy = ({ value }) => {
+  copyEnabled = () => {
+    return !!this.props.onCellCopyPaste;
+  };
+
+  handleCopy = async ({ value }) => {
     const { rowIdx, idx } = this.state.selectedPosition;
-    copyToClipboard(value);
-    this.setState({
-      copiedPosition: { rowIdx, idx, value },
-      copiedRange: null,
-    });
+    try {
+      await navigator.clipboard.writeText(value);
+      this.setState({
+        copiedPosition: { rowIdx, idx, value },
+        copiedRange: null,
+      });
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+    }
   };
 
   handleCancelCopy = () => {
