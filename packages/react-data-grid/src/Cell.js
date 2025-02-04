@@ -78,7 +78,11 @@ class Cell extends React.PureComponent {
     }
   };
 
-  onCellMouseDown = () => {
+  onCellMouseDown = (e) => {
+    if (e.target.closest(".react-grid-Cell") !== e.currentTarget) {
+      return;
+    }
+
     const { idx, rowIdx, cellMetaData } = this.props;
     if (isFunction(cellMetaData.onCellMouseDown)) {
       cellMetaData.onCellMouseDown({ idx, rowIdx });
