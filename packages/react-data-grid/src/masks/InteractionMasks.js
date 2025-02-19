@@ -257,14 +257,15 @@ class InteractionMasks extends React.Component {
       this.onPressTab(e);
     } else if (this.isKeyboardNavigationEvent(e)) {
       this.changeCellFromEvent(e);
-    } else if (
-      isKeyPrintable(e.keyCode) ||
-      [keyCodes.Backspace, keyCodes.Delete, keyCodes.Enter].indexOf(
-        e.keyCode
-      ) !== -1
-    ) {
-      this.openEditor(e);
     }
+    // else if (
+    //   isKeyPrintable(e.keyCode) ||
+    //   [keyCodes.Backspace, keyCodes.Delete, keyCodes.Enter].indexOf(
+    //     e.keyCode
+    //   ) !== -1
+    // ) {
+    //   this.openEditor(e);
+    // }
   };
 
   globalOnKeyUp = (event) => {
